@@ -81,9 +81,12 @@ frontier. Possible return values are (1) on it (i.e., an optimal point with resp
 (2) beyond it (i.e., impossible) or (3) before it (i.e., feasible but suboptimal). To make it
 explicit, we return the following three strings: "optimal", "impossible", or "suboptimal".
 
-TODO Add some kind of epsilon tolerance of perhaps 1e-4 due to rounding off errors?
+NOTE I am testing an epsilon here of around 1e-6 in case rounding errors occur.
+
+NOTE This is for a single point. Do not input a list of points.
 '''
 def position_t1(point):
+    epsilon = 1e-5
     (r0,r1,r2) = (point[0],point[1],point[2])
     if r0 < 0 or r1 < 0 or r2 < 0:
         return "Impossible" # An easy case
@@ -92,7 +95,8 @@ def position_t1(point):
     if r0 <= 1 and r1 <= 1 and r2 <= 1:
         # This case we are contained in the cube that contains the triangular plane at x+y+z=2.
         summ = r0 + r1 + r2
-        if summ == 2:
+        if (summ > (2 - epsilon)) and (summ < (2 + epsilon)):
+        #if summ == 2:
             return "Optimal"
         elif summ > 2:
             return "Suboptimal"
@@ -100,7 +104,7 @@ def position_t1(point):
             return "Impossible"
     else:
         # Now we could be in any of the three other blocks. They are symmetric.
-        if r0 >= 0:
+        if r0 >= 1:
             # Case of plane y + z = 1
             summ = r1 + r2
         elif r1 >= 1:
@@ -109,16 +113,12 @@ def position_t1(point):
         else:
             # Case of plane x + y = 1
             summ = r0 + r1
-        if summ == 1:
+        if (summ > (1 - epsilon)) and (summ < (1 + epsilon)):
+        #if summ == 1:
             return "Optimal"
         elif summ > 1:
             return "Suboptimal"
         else:
             return "Impossible"
-
-
-
-
-
 
 

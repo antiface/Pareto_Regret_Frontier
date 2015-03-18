@@ -62,15 +62,15 @@ def position_t0(points_list):
 ########
 
 # To make it simple, we manually choose which task we want to do here.
-brute_force_t1 = True
-brute_force_t2 = False
+brute_force_t1 = False
+brute_force_t2 = True
 plot_3d_frontier = False
 plot_2d_frontier = False
 
 # Find \mathbb{G}_{T=1} by brute-force simulation. A useful warm-up/test for the harder stages.
 if brute_force_t1:
     print "Now attempting to find \mathbb{G}_{T=1} by brute-force simulation..."
-    num = 50
+    num = 25
     (impossible,suboptimal,optimal) = ([],[],[])
     (basis0,basis1,basis2) = (np.array([0,1,1]), np.array([1,0,1]), np.array([1,1,0]))
     (c0,c1,c2) = np.meshgrid(np.linspace(0,1,num), np.linspace(0,1,num), np.linspace(0,1,num))
@@ -95,6 +95,51 @@ if brute_force_t1:
         len(impossible),len(suboptimal),len(optimal))
     # Next step is to plot. There are several ways we can do this.
     plt3d = plt.figure().gca(projection='3d')
+    x_coordinates = [point[0] for point in impossible]
+    y_coordinates = [point[1] for point in impossible]
+    z_coordinates = [point[2] for point in impossible]
+    plt3d.plot_surface(x_coordinates, y_coordinates, z_coordinates)
+    plt.xlabel('X axis')
+    plt.ylabel('Y axis')
+    plt.show()
+
+
+# Attempts to find \mathbb{G}_{T=2} by brute-force simulation.
+if brute_force_t2:
+    print "Now attempting to find \mathbb{G}_{T=2} by brute-force simulation..."
+    num = 100 # No more than 200.
+    (impossible,suboptimal,optimal) = ([],[],[])
+    (basis0,basis1,basis2) = (np.array([0,1,1]), np.array([1,0,1]), np.array([1,1,0]))
+    (c0,c1,c2) = np.meshgrid(np.linspace(0,2,num), np.linspace(0,2,num), np.linspace(0,2,num))
+    (c0,c1,c2) = (c0.ravel(),c1.ravel(),c2.ravel())
+    print "We must iterate through " + str(len(c0)) + " simulated points ... "
+    # The case of i=0 is when all the components are zero.
+    for i in range(1,len(c0)):
+        if i % 100000 == 0:
+            print "Now on point " + str(i)
+        p = c0[i]*basis0 + c1[i]*basis1 + c2[i]*basis2
+        w = np.array([c0[i], c1[i], c2[i]])
+        w = w / np.sum(w)
+        six_points = par.get_six_points(p, w, False)
+        done = False
+        for s in six_points:
+            if par.position_t1(s) == "Impossible":
+                impossible.append(p)
+                done = True
+                break
+        if not done:
+            for s in six_points:
+                if par.position_t1(s) == "Optimal":
+                    optimal.append(p)
+                    done = True
+                    break
+        if not done:
+            suboptimal.append(p)
+    print "Number of impossible, suboptimal, and optimal points: {0}, {1}, {2}.".format(
+        len(impossible),len(suboptimal),len(optimal))
+    print optimal
+    # Next step is to plot. There are several ways we can do this.
+    plt3d = plt.figure().gca(projection='3d')
     x_coordinates = [point[0] for point in optimal]
     y_coordinates = [point[1] for point in optimal]
     z_coordinates = [point[2] for point in optimal]
@@ -102,54 +147,6 @@ if brute_force_t1:
     plt.xlabel('X axis')
     plt.ylabel('Y axis')
     plt.show()
-
-
-# Attempts to find \mathbb{G}_{T=2} by brute-force simulation, so have coordinates in [0,2].
-# Remember that the points in the mesh grid are NOT the actual points we want to sample. These are
-# the raw points with two rounds left. For each of these points, then, we must assign an optimal
-# probability vector. Then 
-if brute_force_t2:
-    print "Now attempting to find \mathbb{G}_{T=2} by brute-force simulation..."
-    impossible = []
-    suboptimal = []
-    optimal = []
-    num = 100
-    xx,yy,zz = np.meshgrid(np.linspace(0,2,num), np.linspace(0,2,num), np.linspace(0,2,num))
-    x_coords,y_coords,z_coords = (xx.ravel(), yy.ravel(), zz.ravel())
-    num_points = len(x_coords)
-    print "We must iterate through " + str(num_points) + " simulated points ... "
-    for i in range(num_points):
-        p = (x_coords[i], y_coords[i], z_coords[i])
-
-        # TODO Assign raw probability vector! Once we have that, then it's easy, because we call
-        # par.get_six_points(...,...) to find where the adversary could send it. If ANY of the six
-        # points are impossible, the point overall is impossible. If none are impossible, then check
-        # if ANY of the six points are OPTIMAL. If so, the overall point is optimal and belongs on
-        # the boundary of \mathbb{G}_{T=2}. If ALL SIX are suboptimal, then the point overall is
-        # suboptimal because we could therefore always decrease one of its components by epsilon and
-        # we would still be safe.
-
-        # So, the main challenge is to find the correct probability weight vector, and this I
-        # believe will require some clever convex combination of certain probabilities. Also, we may
-        # (as I mentioned in that code) need to make it work for a certain epsilon tolerance since
-        # we may have +/- 0.00001-ish errors due to rounding and floating point arithmetic.
-
-        # NOTE: this is not correct. It was only for experimentation.
-        '''
-        result = par.position_t1(p)
-        if result == "Impossible":
-            impossible.append(p)
-        elif result == "Suboptimal":
-            suboptimal.append(p)
-        else:
-            optimal.append(p)
-        '''
-    print "\nFirst, the impossible points:"
-    print impossible
-    print "\nNow the suboptimal points:"
-    print suboptimal
-    print "\nNow the optimal points:"
-    print optimal
 
 
 # Plot the G_{T=1} frontier by going through each of the planes and getting their meshgrids and z's
