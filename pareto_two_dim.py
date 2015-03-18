@@ -43,15 +43,66 @@ def plane_two():
     z = (-normal[0] * xx - normal[1] * yy - d) * 1. /normal[2]
     return (xx, yy, z)
 
+'''
+Given six points, returns either "Impossible", "Optimal", or "Suboptimal" for the case when we are
+trying to find \mathbb{G}_{T=1} and our reference boundary is \mathbb{G}_{T=0}.
+'''
+def position_t0(points_list):
+    for p in points_list:
+        if p[0] < 0 or p[1] < 0 or p[2] < 0:
+            return "Impossible"
+    for p in points_list:
+        if p[0] == 0 or p[1] == 0 or p[2] == 0:
+            return "Optimal"
+    return "Suboptimal"
+
 
 ########
 # MAIN #
 ########
 
 # To make it simple, we manually choose which task we want to do here.
-brute_force_t2 = True
+brute_force_t1 = True
+brute_force_t2 = False
 plot_3d_frontier = False
 plot_2d_frontier = False
+
+# Find \mathbb{G}_{T=1} by brute-force simulation. A useful warm-up/test for the harder stages.
+if brute_force_t1:
+    print "Now attempting to find \mathbb{G}_{T=1} by brute-force simulation..."
+    num = 50
+    (impossible,suboptimal,optimal) = ([],[],[])
+    (basis0,basis1,basis2) = (np.array([0,1,1]), np.array([1,0,1]), np.array([1,1,0]))
+    (c0,c1,c2) = np.meshgrid(np.linspace(0,1,num), np.linspace(0,1,num), np.linspace(0,1,num))
+    (c0,c1,c2) = (c0.ravel(),c1.ravel(),c2.ravel())
+    print "We must iterate through " + str(len(c0)) + " simulated points ... "
+    # The case of i=0 is when all the components are zero.
+    for i in range(1,len(c0)):
+        if i % 100000 == 0:
+            print "Now on point " + str(i)
+        p = c0[i]*basis0 + c1[i]*basis1 + c2[i]*basis2
+        w = np.array([c0[i], c1[i], c2[i]])
+        w = w / np.sum(w)
+        six_points = par.get_six_points(p, w, False)
+        result = position_t0(six_points)
+        if result == "Impossible":
+            impossible.append(p)
+        elif result == "Suboptimal":
+            suboptimal.append(p)
+        else:
+            optimal.append(p)
+    print "Number of impossible, suboptimal, and optimal points: {0}, {1}, {2}.".format(
+        len(impossible),len(suboptimal),len(optimal))
+    # Next step is to plot. There are several ways we can do this.
+    plt3d = plt.figure().gca(projection='3d')
+    x_coordinates = [point[0] for point in optimal]
+    y_coordinates = [point[1] for point in optimal]
+    z_coordinates = [point[2] for point in optimal]
+    plt3d.scatter(x_coordinates, y_coordinates, z_coordinates)
+    plt.xlabel('X axis')
+    plt.ylabel('Y axis')
+    plt.show()
+
 
 # Attempts to find \mathbb{G}_{T=2} by brute-force simulation, so have coordinates in [0,2].
 # Remember that the points in the mesh grid are NOT the actual points we want to sample. These are
@@ -66,7 +117,7 @@ if brute_force_t2:
     xx,yy,zz = np.meshgrid(np.linspace(0,2,num), np.linspace(0,2,num), np.linspace(0,2,num))
     x_coords,y_coords,z_coords = (xx.ravel(), yy.ravel(), zz.ravel())
     num_points = len(x_coords)
-    print "Now iterating through " + str(num_points) + " simulated points ... "
+    print "We must iterate through " + str(num_points) + " simulated points ... "
     for i in range(num_points):
         p = (x_coords[i], y_coords[i], z_coords[i])
 
@@ -113,6 +164,7 @@ if plot_3d_frontier:
     plt.xlabel('X axis')
     plt.ylabel('Y axis')
     plt.show()
+
 
 # The following is old code that can reproduce Wouter's plot of the 2-D Pareto Regret frontier.
 if plot_2d_frontier:
