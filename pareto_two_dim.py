@@ -62,10 +62,31 @@ def position_t0(points_list):
 ########
 
 # To make it simple, we manually choose which task we want to do here.
+simple_plot_tests = True
 brute_force_t1 = False
-brute_force_t2 = True
+brute_force_t2 = False
 plot_3d_frontier = False
 plot_2d_frontier = False
+
+# We'll manually put in some points to make plotting easier
+if simple_plot_tests:
+    optimal = [np.array([2,.5,.5]),np.array([.5,2,.5]),np.array([.5,.5,2]), 
+               np.array([2,2,0]),np.array([2,0,2]),np.array([0,2,2]),
+               (1./99)*np.array([82,66,116]), 
+               (1./99)*np.array([116,66,82]), 
+               (1./99)*np.array([66,82,116]), 
+               (1./99)*np.array([66,116,82]), 
+               (1./99)*np.array([82,116,66]), 
+               (1./99)*np.array([116,82,66]),]
+    plt3d = plt.figure().gca(projection='3d')
+    x_coordinates = [point[0] for point in optimal]
+    y_coordinates = [point[1] for point in optimal]
+    z_coordinates = [point[2] for point in optimal]
+    plt3d.plot_trisurf(x_coordinates, y_coordinates, z_coordinates)
+    plt.xlabel('X axis')
+    plt.ylabel('Y axis')
+    plt.show()
+
 
 # Find \mathbb{G}_{T=1} by brute-force simulation. A useful warm-up/test for the harder stages.
 if brute_force_t1:
@@ -108,13 +129,11 @@ if brute_force_t1:
 if brute_force_t2:
     print "Now attempting to find \mathbb{G}_{T=2} by brute-force simulation..."
     num = 100 # No more than 200.
-    (impossible,suboptimal,optimal) = ([],[],[])
+    impossible,suboptimal = [],[]
+    optimal = [np.array([5./6,5./6,5./6]), np.array([2,.5,.5]), np.array([.5,2,.5]), np.array([.5,.5,2])]
     (basis0,basis1,basis2) = (np.array([0,1,1]), np.array([1,0,1]), np.array([1,1,0]))
     (c0,c1,c2) = np.meshgrid(np.linspace(0,2,num), np.linspace(0,2,num), np.linspace(0,2,num))
     (c0,c1,c2) = (c0.ravel(),c1.ravel(),c2.ravel())
-    c0 = np.append(c0,[5./12])
-    c1 = np.append(c1,[5./12])
-    c2 = np.append(c2,[5./12])
     print "We must iterate through " + str(len(c0)) + " simulated points ... "
     # The case of i=0 is when all the components are zero.
     for i in range(1,len(c0)):
