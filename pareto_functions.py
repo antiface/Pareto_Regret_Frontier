@@ -121,4 +121,29 @@ def position_t1(point):
         else:
             return "Impossible"
 
+'''
+Given a denominator limit d, generate a list of rationals p/q such that 1 <= q <= d AND that 0 <=
+p/q <= actual limit. We must include 0 for obvious reasons. 
+
+Example: if den_limit = 3 and actual_limit = 1, then we would first consider the following values:
+
+[0/1, 1/1, 0/2, 1/2, 2/2, 0/3, 1/3, 2/3, 3/3]
+
+But because we test for inclusion, our actual list would be:
+
+[0, 1, 1/2, 1/3, 2/3]
+
+Also to make things faster we should just include 0 at the start, that way we don't need to test it.
+'''
+def generate_rationals(den_limit, actual_limit):
+    result = [0]
+    for denominator in range(1, den_limit+1):
+        for numerator in range(1, denominator*actual_limit + 1):
+            value = float(numerator) / denominator
+            if value not in result:
+                result.append(value)
+    return result
+
+
+
 

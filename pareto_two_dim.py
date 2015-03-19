@@ -56,15 +56,33 @@ def position_t0(points_list):
             return "Optimal"
     return "Suboptimal"
 
+'''
+Given a list of 3-D points, we will augment the list by adding in all points that swap the
+coordinates. For instance, a list of:
+
+[np.array([1,2,3]), np.array([1,1,1])]
+
+Turns into:
+
+[np.array([1,2,3]), np.array([2,1,3]), np.array([1,3,2]), np.array([3,2,1]), np.array([1,1,1])]
+
+UPDATE: Actually I will have to think more about the mathematical validity of this...
+'''
+def replicate(coordinates):
+    result = []
+    # TODO
+    return result
+
+
 
 ########
 # MAIN #
 ########
 
 # To make it simple, we manually choose which task we want to do here.
-simple_plot_tests = True
+simple_plot_tests = False
 brute_force_t1 = False
-brute_force_t2 = False
+brute_force_t2 = True
 plot_3d_frontier = False
 plot_2d_frontier = False
 
@@ -126,45 +144,55 @@ if brute_force_t1:
 
 
 # Attempts to find \mathbb{G}_{T=2} by brute-force simulation.
+# Note: "optimal" starts with three known corner cases that this simulation will not capture
 if brute_force_t2:
     print "Now attempting to find \mathbb{G}_{T=2} by brute-force simulation..."
-    num = 100 # No more than 200.
     impossible,suboptimal = [],[]
-    optimal = [np.array([5./6,5./6,5./6]), np.array([2,.5,.5]), np.array([.5,2,.5]), np.array([.5,.5,2])]
+    optimal = [np.array([2,.5,.5]),np.array([.5,2,.5]),np.array([.5,.5,2])]
     (basis0,basis1,basis2) = (np.array([0,1,1]), np.array([1,0,1]), np.array([1,1,0]))
-    (c0,c1,c2) = np.meshgrid(np.linspace(0,2,num), np.linspace(0,2,num), np.linspace(0,2,num))
-    (c0,c1,c2) = (c0.ravel(),c1.ravel(),c2.ravel())
-    print "We must iterate through " + str(len(c0)) + " simulated points ... "
-    # The case of i=0 is when all the components are zero.
-    for i in range(1,len(c0)):
-        if i % 100000 == 0:
-            print "Now on point " + str(i)
-        p = c0[i]*basis0 + c1[i]*basis1 + c2[i]*basis2
-        w = np.array([c0[i], c1[i], c2[i]])
-        w = w / np.sum(w)
-        six_points = par.get_six_points(p, w, False)
-        done = False
-        for s in six_points:
-            if par.position_t1(s) == "Impossible":
-                impossible.append(p)
-                done = True
-                break
-        if not done:
-            for s in six_points:
-                if par.position_t1(s) == "Optimal":
-                    optimal.append(p)
-                    done = True
-                    break
-        if not done:
-            suboptimal.append(p)
+    rationals = par.generate_rationals(18, 2) # Be careful!
+    print "There are a total of " + str(len(rationals)) + " possible values for a single basis... "
+    points_tested = 0
+    for first in range(0, len(rationals)):
+        #for second in range(first, len(rationals)):
+        for second in range(0, len(rationals)):
+            #for third in range(second, len(rationals)):
+            for third in range(0, len(rationals)):
+                # Do we want to ensure that c0 <= c1 <= c2. We will only get a third of the plot.
+                (c0,c1,c2) = (rationals[first],rationals[second],rationals[third])
+                p = c0*basis0 + c1*basis1 + c2*basis2
+                if np.sum(p) < 2:
+                    continue
+                w = np.array([c0, c1, c2])
+                w = w / np.sum(w)
+                six_points = par.get_six_points(p, w, False)
+                points_tested += 1
+                if points_tested % 100000 == 0:
+                    print "Points tested: {}.".format(points_tested)
+                done = False
+                for s in six_points:
+                    if par.position_t1(s) == "Impossible":
+                        impossible.append(p)
+                        done = True
+                        break
+                if not done:
+                    for s in six_points:
+                        if par.position_t1(s) == "Optimal":
+                            optimal.append(p)
+                            done = True
+                            break
+                if not done:
+                    suboptimal.append(p)
     print "Number of impossible, suboptimal, and optimal points: {0}, {1}, {2}.".format(
         len(impossible),len(suboptimal),len(optimal))
+    print "Total points tested: {}".format(points_tested)
     print optimal
     # Next step is to plot. There are several ways we can do this.
     plt3d = plt.figure().gca(projection='3d')
     x_coordinates = [point[0] for point in optimal]
     y_coordinates = [point[1] for point in optimal]
     z_coordinates = [point[2] for point in optimal]
+    #plt3d.scatter(x_coordinates, y_coordinates, z_coordinates)
     plt3d.plot_trisurf(x_coordinates, y_coordinates, z_coordinates)
     plt.xlabel('X axis')
     plt.ylabel('Y axis')
