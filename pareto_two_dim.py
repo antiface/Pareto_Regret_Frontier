@@ -148,9 +148,10 @@ if brute_force_t1:
 if brute_force_t2:
     print "Now attempting to find \mathbb{G}_{T=2} by brute-force simulation..."
     impossible,suboptimal = [],[]
-    optimal = [np.array([2,.5,.5]),np.array([.5,2,.5]),np.array([.5,.5,2])]
+    optimal = [np.array([2,.5,.5]),np.array([.5,2,.5]),np.array([.5,.5,2]),
+               np.array([0,2,2]),np.array([2,0,2]),np.array([2,2,0])]
     (basis0,basis1,basis2) = (np.array([0,1,1]), np.array([1,0,1]), np.array([1,1,0]))
-    rationals = par.generate_rationals(18, 2) # Be careful!
+    rationals = par.generate_rationals(30, 1) # Be careful! I've done (24,2) before.
     print "There are a total of " + str(len(rationals)) + " possible values for a single basis... "
     points_tested = 0
     for first in range(0, len(rationals)):
@@ -192,8 +193,8 @@ if brute_force_t2:
     x_coordinates = [point[0] for point in optimal]
     y_coordinates = [point[1] for point in optimal]
     z_coordinates = [point[2] for point in optimal]
-    #plt3d.scatter(x_coordinates, y_coordinates, z_coordinates)
-    plt3d.plot_trisurf(x_coordinates, y_coordinates, z_coordinates)
+    plt3d.scatter(x_coordinates, y_coordinates, z_coordinates)
+    #plt3d.plot_trisurf(x_coordinates, y_coordinates, z_coordinates)
     plt.xlabel('X axis')
     plt.ylabel('Y axis')
     plt.show()
