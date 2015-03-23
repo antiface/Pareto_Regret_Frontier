@@ -1,7 +1,6 @@
 '''
 This is the Pareto Regret Frontier for two experts.
-
-Edit: I'm now using this code to plot the 3-D frontier with one expert.
+Update: I'm now using this code to plot the 3-D frontier with one expert.
 
 (c) March 2015 by Daniel Seita
 '''
@@ -39,7 +38,7 @@ def plane_two():
     point = np.array([1, 0.5, 0.5])
     normal = np.array([0, 1, 1])
     d = -point.dot(normal)
-    xx, yy = np.meshgrid(np.linspace(1,3,10), np.linspace(0,1,10))
+    xx, yy = np.meshgrid(np.linspace(1,2,10), np.linspace(0,1,10))
     z = (-normal[0] * xx - normal[1] * yy - d) * 1. /normal[2]
     return (xx, yy, z)
 
@@ -57,37 +56,9 @@ def position_t0(points_list):
     return "Suboptimal"
 
 '''
-Given a list of 3-D points, we will augment the list by adding in all points that swap the
-coordinates. For instance, a list of:
-
-[np.array([1,2,3]), np.array([1,1,1])]
-
-Turns into:
-
-[np.array([1,2,3]), np.array([2,1,3]), np.array([1,3,2]), np.array([3,2,1]), np.array([1,1,1])]
-
-UPDATE: Actually I will have to think more about the mathematical validity of this...
+We'll manually put in some points to make plotting easier
 '''
-def replicate(coordinates):
-    result = []
-    # TODO
-    return result
-
-
-
-########
-# MAIN #
-########
-
-# To make it simple, we manually choose which task we want to do here.
-simple_plot_tests = False
-brute_force_t1 = False
-brute_force_t2 = True
-plot_3d_frontier = False
-plot_2d_frontier = False
-
-# We'll manually put in some points to make plotting easier
-if simple_plot_tests:
+def simple_plot_tests():
     optimal = [np.array([2,.5,.5]),np.array([.5,2,.5]),np.array([.5,.5,2]), 
                np.array([2,2,0]),np.array([2,0,2]),np.array([0,2,2]),
                (1./99)*np.array([82,66,116]), 
@@ -105,9 +76,25 @@ if simple_plot_tests:
     plt.ylabel('Y axis')
     plt.show()
 
+'''
+Plot the G_{T=1} frontier by going through each of the planes and getting their meshgrids and z's
+'''
+def plot_3d_frontier():
+    plt3d = plt.figure().gca(projection='3d')
+    a,b,c = plane_one()
+    plt3d.plot_trisurf(a,b,c)
+    a,b,c = plane_two()
+    plt3d.plot_surface(a,b,c)
+    plt3d.plot_surface(b,a,c)
+    plt3d.plot_surface(c,b,a)
+    plt.xlabel('X axis')
+    plt.ylabel('Y axis')
+    plt.show()
 
-# Find \mathbb{G}_{T=1} by brute-force simulation. A useful warm-up/test for the harder stages.
-if brute_force_t1:
+'''
+Find \mathbb{G}_{T=1} by brute-force simulation. A useful warm-up/test for the harder stages.
+'''
+def brute_force_t1():
     print "Now attempting to find \mathbb{G}_{T=1} by brute-force simulation..."
     num = 25
     (impossible,suboptimal,optimal) = ([],[],[])
@@ -143,23 +130,74 @@ if brute_force_t1:
     plt.show()
 
 
+'''
+Given a list of 3-D points, we will augment the list by adding in all points that can be formed by
+usin the same components. For instance, a list of:
+
+[np.array([1,2,3]), np.array([1,1,1])]
+
+Turns into:
+
+[np.array([1,2,3]), np.array([2,1,3]), np.array([1,3,2]), np.array([3,2,1]), np.array([3,1,2]),
+np.array([2,3,1]), np.array([1,1,1])]
+
+This should be fine because if np.array([a,b,c]) is a valid point, then there exists a probability
+vector. Now if the order of a,b,c, gets changed, we just change the probability vector accordingly.
+
+Input: coordinates is a numpy array.
+'''
+def replicate(coordinates):
+    result = [coordinates]
+    r1,r2,r3 = coordinates[0],coordinates[1],coordinates[2]
+    p2 = np.array([r1,r3,r2])
+    if not any((p2 == x).all() for x in result):
+        result.append(p2)
+    p3 = np.array([r2,r1,r3])
+    if not any((p3 == x).all() for x in result):
+        result.append(p3)
+    p4 = np.array([r2,r3,r1])
+    if not any((p4 == x).all() for x in result):
+        result.append(p4)
+    p5 = np.array([r3,r1,r2])
+    if not any((p5 == x).all() for x in result):
+        result.append(p5)
+    p6 = np.array([r3,r2,r1])
+    if not any((p6 == x).all() for x in result):
+        result.append(p6)
+    return result
+
+
+########
+# MAIN #
+########
+
+# To make it simple, we manually choose which task we want to do here.
+brute_force_t2 = True
+simple_plot_tests = False
+brute_force_t1 = False
+plot_3d_frontier = False
+if simple_plot_tests:
+    simple_plot_tests()
+if plot_3d_frontier:
+    plot_3d_frontier()
+if brute_force_t1:
+    brute_force_t1()
+
 # Attempts to find \mathbb{G}_{T=2} by brute-force simulation.
 # Note: "optimal" starts with three known corner cases that this simulation will not capture
+# Also, we only need c0 <= c1 <= c2 because the others can be found by swapping the components
 if brute_force_t2:
     print "Now attempting to find \mathbb{G}_{T=2} by brute-force simulation..."
     impossible,suboptimal = [],[]
     optimal = [np.array([2,.5,.5]),np.array([.5,2,.5]),np.array([.5,.5,2]),
                np.array([0,2,2]),np.array([2,0,2]),np.array([2,2,0])]
     (basis0,basis1,basis2) = (np.array([0,1,1]), np.array([1,0,1]), np.array([1,1,0]))
-    rationals = par.generate_rationals(30, 1) # Be careful! I've done (24,2) before.
+    rationals = par.generate_rationals(30, 2) # Be careful! I've done (27,2) and (40,1) before.
     print "There are a total of " + str(len(rationals)) + " possible values for a single basis... "
     points_tested = 0
     for first in range(0, len(rationals)):
-        #for second in range(first, len(rationals)):
-        for second in range(0, len(rationals)):
-            #for third in range(second, len(rationals)):
-            for third in range(0, len(rationals)):
-                # Do we want to ensure that c0 <= c1 <= c2. We will only get a third of the plot.
+        for second in range(first, len(rationals)):
+            for third in range(second, len(rationals)):
                 (c0,c1,c2) = (rationals[first],rationals[second],rationals[third])
                 p = c0*basis0 + c1*basis1 + c2*basis2
                 if np.sum(p) < 2:
@@ -168,63 +206,45 @@ if brute_force_t2:
                 w = w / np.sum(w)
                 six_points = par.get_six_points(p, w, False)
                 points_tested += 1
-                if points_tested % 100000 == 0:
+                if points_tested % 250000 == 0:
                     print "Points tested: {}.".format(points_tested)
                 done = False
                 for s in six_points:
                     if par.position_t1(s) == "Impossible":
-                        impossible.append(p)
                         done = True
                         break
                 if not done:
                     for s in six_points:
                         if par.position_t1(s) == "Optimal":
-                            optimal.append(p)
+                            symmetrical_points = replicate(p)
+                            for pt in symmetrical_points:
+                                optimal.append(pt)
                             done = True
                             break
-                if not done:
-                    suboptimal.append(p)
-    print "Number of impossible, suboptimal, and optimal points: {0}, {1}, {2}.".format(
-        len(impossible),len(suboptimal),len(optimal))
+    print "Number of optimal points: {}.".format(len(optimal))
     print "Total points tested: {}".format(points_tested)
-    print optimal
+    f = open('known_points', 'w')
+    for item in optimal:
+        f.write(str(item) + '\n')
+    f.close()
     # Next step is to plot. There are several ways we can do this.
     plt3d = plt.figure().gca(projection='3d')
+
+    a,b,c = plane_one()
+    plt3d.plot_trisurf(a,b,c,color='y')
+    a,b,c = plane_two()
+    plt3d.plot_surface(a,b,c,color='y')
+    plt3d.plot_surface(b,a,c,color='y')
+    plt3d.plot_surface(c,b,a,color='y')
+
     x_coordinates = [point[0] for point in optimal]
     y_coordinates = [point[1] for point in optimal]
     z_coordinates = [point[2] for point in optimal]
-    plt3d.scatter(x_coordinates, y_coordinates, z_coordinates)
+    plt3d.scatter(x_coordinates, y_coordinates, z_coordinates, c='k')
     #plt3d.plot_trisurf(x_coordinates, y_coordinates, z_coordinates)
     plt.xlabel('X axis')
     plt.ylabel('Y axis')
     plt.show()
-
-
-# Plot the G_{T=1} frontier by going through each of the planes and getting their meshgrids and z's
-if plot_3d_frontier:
-    plt3d = plt.figure().gca(projection='3d')
-    a,b,c = plane_one()
-    plt3d.plot_trisurf(a,b,c)
-    a,b,c = plane_two()
-    plt3d.plot_surface(a,b,c)
-    plt3d.plot_surface(b,a,c)
-    plt3d.plot_surface(c,b,a)
-    plt.xlabel('X axis')
-    plt.ylabel('Y axis')
-    plt.show()
-
-
-# The following is old code that can reproduce Wouter's plot of the 2-D Pareto Regret frontier.
-if plot_2d_frontier:
-    if len(sys.argv) != 2:
-        print "Usage: python pareto_two_dim.py <max_T>"
-        sys.exit(-1)
-    max_T = int(sys.argv[1])
-    for T in range(0,max_T+1):
-        values = [pareto.fT_formula(i,T) for i in range(0,T+1)]
-        plt.plot(values, values[::-1])
-    plt.show()
-
 
 
 
