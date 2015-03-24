@@ -190,9 +190,10 @@ if brute_force_t2:
     print "Now attempting to find \mathbb{G}_{T=2} by brute-force simulation..."
     impossible,suboptimal = [],[]
     optimal = [np.array([2,.5,.5]),np.array([.5,2,.5]),np.array([.5,.5,2]),
-               np.array([0,2,2]),np.array([2,0,2]),np.array([2,2,0])]
-    (basis0,basis1,basis2) = (np.array([0,1,1]), np.array([1,0,1]), np.array([1,1,0]))
-    rationals = par.generate_rationals(30, 2) # Be careful! I've done (27,2) and (40,1) before.
+               np.array([0,2,2]),np.array([2,0,2]),np.array([2,2,0]),
+               np.array([1.5,1.5,1./3]),np.array([1./3,1.5,1.5]),np.array([1.5,1./3,1.5])]
+    (basis0,basis1,basis2) = (np.array([0,2,2]), np.array([2,0,2]), np.array([2,2,0]))
+    rationals = par.generate_rationals(30, 1)
     print "There are a total of " + str(len(rationals)) + " possible values for a single basis... "
     points_tested = 0
     for first in range(0, len(rationals)):
