@@ -15,6 +15,8 @@ mesh, so having more points increases the chances of getting "better", flatter s
 requires heavier computation. If no arguments are specified, then it defaults to granularity = 24.
 '''
 
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
 import numpy as np
 import sys
 
@@ -23,7 +25,7 @@ import sys
 # MAIN #
 ########
 
-gran = 24
+gran = 60
 if len(sys.argv) == 3:
     gran = int(sys.argv[2])
 if gran <= 0 or gran >= 100:
@@ -32,7 +34,7 @@ if gran <= 0 or gran >= 100:
 
 T = 1
 # H[t][r0,r1] gives the minimum r2 (or NaN) for making <r0,r1,r2> optimal in t-round game.
-H = [np.nan] # Putting NaN here as dummy first element
+H = [np.nan] # Putting NaN here as dummy first matrix, because we only want t=1,2,...
 lossPatterns = np.array([[0,0,0],
                          [1,0,0],
                          [0,1,0],
@@ -42,20 +44,22 @@ lossPatterns = np.array([[0,0,0],
                          [0,1,1]]) # Using <1,1,1> gives same result as <0,0,0> so ignore the former.
 
 for t in range(1,T+1):
-    print "Currently generating samples for round {}.\n".format(t)
+    print "\nCurrently generating samples for round {}.".format(t)
     H.append(np.empty((gran*t+1, gran*t+1)) * np.nan)
 
-    for r0 in range(1,gran*t+2):
-        print "{0:.2f}%\r".format(100*float(r0-1)/(gran*t+1))
-        # Can fill table in from symmetry TODO Check on when one of the elements is 0 ...
-        H[t][r0, 1:r0-1] = H[t][1:r0-1, r0]
+    for r0 in range(0,gran*t+1):
+        print "\rSearching r0 values: {0:.2f} %".format( 100*float(r0)/(gran*t) ),
+        sys.stdout.flush()
+        # Can fill table in from symmetry. If we know H[t][r0,0:r0], we know H[t][0:r0,r0]
+        H[t][r0, 0:r0] = H[t][0:r0, r0]
 
-        for r1 in range(r0,gran*t+2):
+        for r1 in range(r0,gran*t+1):
             # Now find a (good) upper bound for r2 so we don't waste too much time searching.
-            ubd = gran*t+1
-            if r0 > 1:
+            # Important: min(any_real_number, np.nan) = any_real_number.
+            ubd = gran*t
+            if r0 > 0:
                 ubd = min(ubd, H[t][r0-1,r1])
-            if r1 > 1:
+            if r1 > 0:
                 ubd = min(ubd, H[t][r0,r1-1])
             r2 = ubd
 
@@ -67,14 +71,12 @@ for t in range(1,T+1):
                 for p0 in range(0, gran+1):
                     for p1 in range(0, gran-p0+1):
                         p2 = gran-p0-p1
-                        #print "<p0,p1,p2> = <{0},{1},{2}>".format(p0,p1,p2)
 
                         # First do an easy check if adversary can send any component negative
-                        if ((r0-1) < p1+p2) or ((r1-1) < p0+p2) or ((r2-1) < p0+p1):
+                        if (r0 < p1+p2) or (r1 < p0+p2) or (r2 < p0+p1):
                             continue
 
                         # If t=1, then we already know we are safe
-                        print "t = {}".format(t)
                         if t == 1:
                             realizable = True
                             break
@@ -90,21 +92,45 @@ for t in range(1,T+1):
                         break
 
                 # Still in while loop, but finished with looping through <p0,p1,p2>
-                if not realizable: # This means we are at r2 = 0
+                if not realizable: # This means NO <p0,p1,p2> works for this <r0,r1,r2>. Also if r2 = -1.
                     doneWithDecrements = True
                 else:
                     r2 = r2 - 1
 
             # Finished with while loop, have largest r2 that makes <r0,r1,r2> unrealizable
-            if r2 == gran*t+1:
+            if r2 == gran*t:
                 H[t][r0,r1] = np.nan
             else:
                 H[t][r0,r1] = r2+1 # Need next one up for being realizable
 
 # Write to certain files
 # Set up some plots, being sure to divide by 'gran' at the end!
+print "\nAll done with generating points. Now time to plot."
+scatter = True
 for t in range(1,T+1):
-    print "Not implemented yet"
+    data = H[t]
+    x = np.array([])
+    y = np.array([])
+    z = np.array([])
+    for i in range(gran*t+1):
+        for j in range(gran*t+1):
+            if not np.isnan(data[i,j]):
+                x = np.append(x,[i])
+                y = np.append(y,[j])
+                z = np.append(z,[data[i,j]])
+    x = x / gran
+    y = y / gran
+    z = z / gran
+
+    if scatter:
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.scatter(x,y,z)
+        ax.set_xlim([0,1])
+        ax.set_ylim([0,1])
+        ax.set_zlim([0,1])
+        plt.show()
 
 
-print H[t]
+
+
